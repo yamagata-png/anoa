@@ -33,6 +33,14 @@ body{font-family:sans-serif;background:var(--bg);color:var(--tx);min-height:100v
 .py{font-size:9px;font-weight:400;vertical-align:super;line-height:0;}
 .qty-badge{position:absolute;top:-6px;right:-6px;background:var(--br);color:var(--cr);font-size:12px;font-weight:900;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
 .mb.dk .qty-badge{background:var(--blue);}
+.mb-ctrl{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;}
+.mb-minus,.mb-plus{width:30px;height:30px;border-radius:50%;border:none;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mb-minus{background:#EDD;color:var(--rd);}
+.mb-plus{background:#DEF0E4;color:var(--gn);}
+.mb-qty{font-size:16px;font-weight:900;color:var(--br);min-width:20px;text-align:center;}
+.mb.dk .mb-qty{color:var(--blue);}
+.mb.dk .mb-minus{background:#DDE8F0;color:var(--blue);}
+.mb.dk .mb-plus{background:#DDE8F0;color:var(--blue);}
 /* CART BAR */
 .cart{position:fixed;bottom:0;left:0;right:0;background:var(--br2);border-top:2px solid var(--bl);padding:10px 16px;}
 .cart-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
@@ -147,13 +155,15 @@ function disc(){var cs={};Object.keys(cart).forEach(function(id){var item=fi(par
 
 function initCats(){var el=document.getElementById('cats');CATS.forEach(function(cat){var b=document.createElement('button');b.className='ct'+(cat.id===cur?' on':'');b.textContent=cat.lb;b.onclick=function(){cur=cat.id;document.querySelectorAll('.ct').forEach(function(x){x.classList.remove('on');});b.classList.add('on');rg(cat.id);};el.appendChild(b);});}
 
-function rg(cid){var g=document.getElementById('mg');var dk=cid==='coffee'||cid==='juice';var html='';ITEMS.filter(function(i){return i.c===cid;}).forEach(function(i){var q=cart[i.id]||0;var sel=q>0?(dk?' sel dk':' sel'):(dk?' dk':'');html+='<button class="mb'+sel+'" onclick="tap('+i.id+')">';html+='<span class="mn">'+i.id+'</span>';html+='<span class="mm">'+i.n+'</span>';if(i.nt)html+='<span class="mn2">'+i.nt+'</span>';html+='<span class="mp2"><small class="py">¥</small>'+i.p.toLocaleString()+'</span>';if(q>0)html+='<span class="qty-badge">'+q+'</span>';html+='</button>';});g.innerHTML=html;}
+function rg(cid){var g=document.getElementById('mg');var dk=cid==='coffee'||cid==='juice';var html='';ITEMS.filter(function(i){return i.c===cid;}).forEach(function(i){var q=cart[i.id]||0;var sel=q>0?(dk?' sel dk':' sel'):(dk?' dk':'');html+='<div class="mb'+sel+'">';html+='<span class="mn">'+i.id+'</span>';html+='<span class="mm">'+i.n+'</span>';if(i.nt)html+='<span class="mn2">'+i.nt+'</span>';html+='<span class="mp2"><small class="py">¥</small>'+i.p.toLocaleString()+'</span>';if(q>0){html+='<div class="mb-ctrl"><button class="mb-minus" onclick="dec('+i.id+')">－</button><span class="mb-qty">'+q+'</span><button class="mb-plus" onclick="inc('+i.id+')">＋</button></div>';}else{html+='<button style="margin-top:6px;width:80%;height:30px;background:'+(dk?'#DDE8F0':'#FDF0E4')+';border:1.5px solid '+(dk?'rgba(42,74,94,0.3)':'rgba(123,63,42,0.3)')+';border-radius:8px;font-size:14px;font-weight:700;color:'+(dk?'var(--blue)':'var(--br)')+';cursor:pointer;" onclick="inc('+i.id+')">追加</button>';}html+='</div>';});g.innerHTML=html;}
 
-function tap(id){var item=fi(id);if(!item)return;cart[id]=(cart[id]||0)+1;updateCart();rg(cur);}
+function inc(id){var item=fi(id);if(!item)return;cart[id]=(cart[id]||0)+1;updateCart();rg(cur);}
+function dec(id){if(!cart[id]||cart[id]<=0)return;cart[id]--;if(cart[id]===0)delete cart[id];updateCart();rg(cur);}
+function tap(id){inc(id);}
 
 function updateCart(){var cnt=0,sub=0;Object.keys(cart).forEach(function(id){var q=cart[id];var item=fi(parseInt(id));if(item&&q>0){cnt+=q;sub+=item.p*q;}});var d=disc();var tot=sub-d;document.getElementById('cartCnt').textContent=cnt+'点選択中';document.getElementById('cartTotal').textContent=tot.toLocaleString();document.getElementById('cartBtn').disabled=cnt===0;}
 
-function openConfirm(){var list=document.getElementById('confirmList');var html='';var sub=0;Object.keys(cart).forEach(function(id){var q=cart[id];var item=fi(parseInt(id));if(item&&q>0){sub+=item.p*q;html+='<div class="ol-row"><span class="ol-name">'+item.n+'</span><span class="ol-qty">×'+q+'</span><span class="ol-price">¥'+(item.p*q).toLocaleString()+'</span></div>';}});var d=disc();if(d>0)html+='<div class="disc-row"><span>定食+コーヒー割引</span><span>-¥'+d+'</span></div>';html+='<div class="ol-total"><span>合計</span><span>¥'+(sub-d).toLocaleString()+'</span></div>';list.innerHTML=html;document.getElementById('confirmMod').classList.add('on');}
+function openConfirm(){var list=document.getElementById('confirmList');var html='';var sub=0;Object.keys(cart).forEach(function(id){var q=cart[id];var item=fi(parseInt(id));if(item&&q>0){sub+=item.p*q;html+='<div class="ol-row"><span class="ol-name">'+item.n+'</span><div style="display:flex;align-items:center;gap:6px;"><button onclick="dec('+id+');openConfirm();" style="width:28px;height:28px;border-radius:50%;border:none;background:#EDD;color:var(--rd);font-size:16px;font-weight:700;cursor:pointer;">－</button><span class="ol-qty">'+q+'</span><button onclick="inc('+id+');openConfirm();" style="width:28px;height:28px;border-radius:50%;border:none;background:#DEF0E4;color:var(--gn);font-size:16px;font-weight:700;cursor:pointer;">＋</button></div><span class="ol-price">¥'+(item.p*q).toLocaleString()+'</span></div>';}});var d=disc();if(d>0)html+='<div class="disc-row"><span>定食+コーヒー割引</span><span>-¥'+d+'</span></div>';html+='<div class="ol-total"><span>合計</span><span>¥'+(sub-d).toLocaleString()+'</span></div>';if(Object.keys(cart).length===0){closeConfirm();return;}list.innerHTML=html;document.getElementById('confirmMod').classList.add('on');}
 function closeConfirm(){document.getElementById('confirmMod').classList.remove('on');}
 
 function sendOrder(){
