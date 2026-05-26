@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亜乃亜 QRコード一覧</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:sans-serif;background:#FBF4EC;color:#2A1A0E;padding:20px;}
+h1{font-size:22px;font-weight:900;color:#7B3F2A;text-align:center;margin-bottom:6px;letter-spacing:.1em;}
+p{text-align:center;font-size:13px;color:#9B6040;margin-bottom:24px;}
+.print-btn{display:block;margin:0 auto 24px;padding:10px 32px;background:#7B3F2A;color:#FAE8D0;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;}
+.section-title{font-size:18px;font-weight:900;color:#7B3F2A;margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid #C4936A;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.card{background:white;border:1.5px solid rgba(123,63,42,0.2);border-radius:14px;padding:16px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,0.08);}
+.card.counter{border-color:rgba(42,74,94,0.2);}
+.card-title{font-size:16px;font-weight:900;color:#7B3F2A;margin-bottom:4px;}
+.card.counter .card-title{color:#2A4A5E;}
+.card-url{font-size:10px;color:#888;margin-bottom:10px;word-break:break-all;}
+.qr-wrap{display:flex;justify-content:center;margin-bottom:10px;}
+.card-note{font-size:11px;color:#9B6040;}
+@media print{
+  .print-btn{display:none;}
+  body{background:white;padding:10px;}
+  .card{break-inside:avoid;box-shadow:none;border:1px solid #DDD;}
+  .grid{grid-template-columns:repeat(3,1fr);gap:12px;}
+  .section-title{font-size:16px;}
+}
+</style>
+</head>
+<body>
+
+<h1>亜 乃 亜　QRコード一覧</h1>
+<p>各テーブル・カウンターに切り取って置いてください</p>
+<button class="print-btn" onclick="window.print()">🖨️ 印刷する</button>
+
+<div class="section-title">テーブル席（5卓）</div>
+<div class="grid" id="tables"></div>
+
+<div class="section-title">カウンター席（7席）</div>
+<div class="grid" id="counters"></div>
+
+<script>
+var BASE_URL = 'https://yamagata-png.github.io/anoa/anoa_order.html';
+
+function makeQR(containerId, seats) {
+  var container = document.getElementById(containerId);
+  seats.forEach(function(seat) {
+    var card = document.createElement('div');
+    card.className = 'card' + (seat.type === 'counter' ? ' counter' : '');
+
+    var url = BASE_URL + '?table=' + encodeURIComponent(seat.label);
+
+    card.innerHTML =
+      '<div class="card-title">' + seat.name + '</div>' +
+      '<div class="card-url">' + url + '</div>' +
+      '<div class="qr-wrap"><div id="qr-' + seat.id + '"></div></div>' +
+      '<div class="card-note">QRコードをスキャンしてご注文ください</div>';
+
+    container.appendChild(card);
+
+    new QRCode(document.getElementById('qr-' + seat.id), {
+      text: url,
+      width: 140,
+      height: 140,
+      colorDark: seat.type === 'counter' ? '#2A4A5E' : '#5C2D1A',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  });
+}
+
+var tables = [
+  {id:'t1', name:'テーブル 1番', label:'テーブル1', type:'table'},
+  {id:'t2', name:'テーブル 2番', label:'テーブル2', type:'table'},
+  {id:'t3', name:'テーブル 3番', label:'テーブル3', type:'table'},
+  {id:'t4', name:'テーブル 4番', label:'テーブル4', type:'table'},
+  {id:'t5', name:'テーブル 5番', label:'テーブル5', type:'table'},
+];
+
+var counters = [
+  {id:'c1', name:'カウンター 1番', label:'カウンター1', type:'counter'},
+  {id:'c2', name:'カウンター 2番', label:'カウンター2', type:'counter'},
+  {id:'c3', name:'カウンター 3番', label:'カウンター3', type:'counter'},
+  {id:'c4', name:'カウンター 4番', label:'カウンター4', type:'counter'},
+  {id:'c5', name:'カウンター 5番', label:'カウンター5', type:'counter'},
+  {id:'c6', name:'カウンター 6番', label:'カウンター6', type:'counter'},
+  {id:'c7', name:'カウンター 7番', label:'カウンター7', type:'counter'},
+];
+
+makeQR('tables', tables);
+makeQR('counters', counters);
+</script>
+</body>
+</html>
