@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亜乃亜 レジ・会計</title>
+<style>
+:root{--br:#7B3F2A;--br2:#5C2D1A;--bl:#C4936A;--cr:#FAE8D0;--bg:#1A1A2E;--gn:#2E6B3E;--gn2:#1D4A2A;--rd:#C0392B;--yw:#E67E22;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:sans-serif;background:var(--bg);color:white;min-height:100vh;}
+.hd{background:var(--br2);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--bl);}
+.hd h1{font-size:20px;font-weight:900;color:var(--cr);}
+.hd-right{display:flex;align-items:center;gap:10px;}
+.status{font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(108,204,138,0.15);color:#6CCC8A;border:1px solid #6CCC8A;}
+.sound-btn{padding:6px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-family:inherit;font-size:13px;cursor:pointer;}
+.sound-btn.on{background:rgba(108,204,138,0.15);border-color:#6CCC8A;color:#6CCC8A;}
+.clr-btn{padding:6px 14px;background:rgba(196,147,106,0.15);border:1px solid var(--bl);border-radius:8px;color:var(--bl);font-family:inherit;font-size:13px;cursor:pointer;}
+.empty{text-align:center;padding:80px 20px;color:rgba(255,255,255,0.2);font-size:18px;line-height:3;}
+.orders{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+
+/* カード */
+.card{border-radius:16px;padding:16px;border:2px solid;transition:all .3s;}
+.card.status-new{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);}
+.card.status-cooking{background:rgba(230,126,22,0.08);border-color:rgba(230,126,22,0.3);}
+.card.status-ready{background:rgba(46,107,62,0.15);border-color:#6CCC8A;box-shadow:0 0 20px rgba(108,204,138,0.2);animation:pulse 1.5s ease-in-out 5;}
+.card.status-paid{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.06);opacity:.35;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(108,204,138,0.4);}50%{box-shadow:0 0 0 10px rgba(108,204,138,0);}}
+
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.tbl{font-size:22px;font-weight:900;}
+.card.status-new .tbl{color:rgba(255,255,255,0.6);}
+.card.status-cooking .tbl{color:var(--yw);}
+.card.status-ready .tbl{color:#6CCC8A;}
+.card.status-paid .tbl{color:rgba(255,255,255,0.2);}
+.time{font-size:12px;color:rgba(255,255,255,0.4);}
+.badge{font-size:12px;font-weight:900;padding:4px 12px;border-radius:20px;}
+.badge-new{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);}
+.badge-cooking{background:rgba(230,126,22,0.3);color:var(--yw);}
+.badge-ready{background:#6CCC8A;color:#1A3A2A;}
+.badge-paid{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);}
+
+.items{margin-bottom:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;}
+.item-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgba(255,255,255,0.06);font-size:14px;}
+.item-name{color:rgba(255,255,255,0.8);flex:1;}
+.item-qty{color:var(--bl);margin:0 8px;font-weight:700;}
+.item-price{color:rgba(255,255,255,0.4);font-size:12px;}
+.order-num{font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:4px;}
+.disc-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:#6CCC8A;}
+.total-row{display:flex;justify-content:space-between;padding:8px 0 0;font-weight:900;font-size:18px;color:var(--cr);border-top:1px solid rgba(196,147,106,0.2);margin-top:4px;}
+
+.pay-btn{width:100%;height:52px;background:var(--gn);color:white;border:none;border-radius:12px;font-family:inherit;font-size:17px;font-weight:900;cursor:pointer;margin-top:10px;box-shadow:0 4px 0 var(--gn2);}
+.pay-btn:active{transform:translateY(3px);box-shadow:none;}
+.pay-btn:disabled{background:#333;color:#666;box-shadow:none;cursor:default;}
+.wait-label{text-align:center;padding:10px;font-size:13px;color:rgba(255,255,255,0.3);margin-top:6px;}
+
+/* 会計モーダル */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.md{background:var(--cr);border-radius:20px;padding:24px 28px;width:380px;max-width:92vw;max-height:92vh;overflow-y:auto;}
+.md h2{font-size:20px;font-weight:900;color:var(--br);margin-bottom:6px;text-align:center;}
+.md-tbl{font-size:14px;color:var(--bl);text-align:center;margin-bottom:4px;}
+.md-items{margin-bottom:12px;max-height:160px;overflow-y:auto;border:1px solid rgba(123,63,42,0.15);border-radius:8px;padding:8px;}
+.md-item{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px dotted rgba(123,63,42,0.15);}
+.md-disc{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--gn);font-weight:700;}
+.md-total{font-size:38px;font-weight:900;color:var(--br2);text-align:center;margin:12px 0;}
+.md-total small{font-size:16px;font-weight:400;}
+.md-label{font-size:14px;font-weight:700;color:var(--br);margin-bottom:8px;}
+.rcv-disp{font-size:34px;font-weight:900;color:#2A4A5E;text-align:center;background:white;border:3px solid #2A4A5E;border-radius:12px;padding:10px;margin-bottom:14px;min-height:62px;display:flex;align-items:center;justify-content:center;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.nk{height:56px;background:white;border:2px solid rgba(123,63,42,0.2);border-radius:12px;font-size:24px;font-weight:700;color:var(--br);cursor:pointer;font-family:inherit;box-shadow:0 3px 0 rgba(123,63,42,0.15);}
+.nk:active{transform:translateY(2px);box-shadow:none;}
+.nk.dl{background:#FDE;color:var(--rd);font-size:18px;}
+.nk.z2{grid-column:span 2;}
+.change-disp{text-align:center;font-size:20px;font-weight:700;margin-bottom:16px;min-height:28px;color:var(--gn);}
+.change-disp.over{color:var(--rd);}
+.md-btns{display:flex;gap:10px;}
+.md-btn{flex:1;height:54px;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,0.15);}
+.md-btn:active{transform:translateY(3px);box-shadow:none;}
+.md-cancel{background:#C8B89A;color:#5C3A1A;}
+.md-confirm{background:var(--gn);color:white;font-size:18px;}
+.md-confirm:disabled{background:#AAA;cursor:default;}
+
+/* レシート */
+.rm{background:white;border-radius:20px;padding:24px 28px;width:360px;max-width:92vw;text-align:center;}
+.ri{font-size:52px;margin-bottom:8px;}
+.rt{font-size:24px;font-weight:900;color:var(--gn);margin-bottom:14px;}
+.rb{text-align:left;border-top:1px dashed #CCC;border-bottom:1px dashed #CCC;padding:10px 0;margin-bottom:12px;max-height:200px;overflow-y:auto;}
+.rl{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:#333;}
+.rch{font-size:30px;font-weight:900;color:#2A4A5E;margin:10px 0;}
+.rcl{font-size:13px;font-weight:400;color:#666;}
+.rc{width:100%;height:52px;background:var(--br);color:var(--cr);border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:900;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="hd">
+  <h1>🧾 レジ・会計画面</h1>
+  <div class="hd-right">
+    <span class="status" id="statusTxt">● 受信中</span>
+    <button class="sound-btn on" id="soundBtn" onclick="togSound()">🔔 音ON</button>
+    <button class="clr-btn" onclick="clearPaid()">会計済みを削除</button>
+  </div>
+</div>
+<div id="orderArea"><div class="empty">注文を待っています...</div></div>
+
+<!-- 会計モーダル -->
+<div class="ov" id="payMod">
+  <div class="md">
+    <h2>お 会 計</h2>
+    <div class="md-tbl" id="payTable"></div>
+    <div class="md-items" id="payItems"></div>
+    <div class="md-total"><small>合計　</small><span id="payTotal">0</span><small> 円</small></div>
+    <div class="md-label">お預かり金額を入力</div>
+    <div class="rcv-disp" id="rcvDisp">―</div>
+    <div class="numpad">
+      <button class="nk" onclick="rk('1')">1</button><button class="nk" onclick="rk('2')">2</button><button class="nk" onclick="rk('3')">3</button>
+      <button class="nk" onclick="rk('4')">4</button><button class="nk" onclick="rk('5')">5</button><button class="nk" onclick="rk('6')">6</button>
+      <button class="nk" onclick="rk('7')">7</button><button class="nk" onclick="rk('8')">8</button><button class="nk" onclick="rk('9')">9</button>
+      <button class="nk dl" onclick="rd()">⌫</button><button class="nk z2" onclick="rk('0')">0</button>
+    </div>
+    <div class="change-disp" id="changeDisp"></div>
+    <div class="md-btns">
+      <button class="md-btn md-cancel" onclick="closePay()">戻る</button>
+      <button class="md-btn md-confirm" id="confirmBtn" onclick="confirmPay()" disabled>確　定</button>
+    </div>
+  </div>
+</div>
+
+<!-- レシート -->
+<div class="ov" id="receiptMod">
+  <div class="rm">
+    <div class="ri">✅</div>
+    <div class="rt">お会計完了</div>
+    <div class="rb" id="receiptBody"></div>
+    <div class="rch" id="receiptChange"></div>
+    <button class="rc" onclick="closeReceipt()">次のお客様へ</button>
+  </div>
+</div>
+
+<script>
+var DB_URL='https://anoa-register-default-rtdb.asia-southeast1.firebasedatabase.app';
+var orders={};
+var soundOn=true;
+var lastCheck=Date.now();
+var currentTable=null;
+var rcvBuf='';
+
+function togSound(){soundOn=!soundOn;var b=document.getElementById('soundBtn');b.textContent=soundOn?'🔔 音ON':'🔕 音OFF';b.classList.toggle('on',soundOn);}
+
+function beep(){
+  if(!soundOn)return;
+  try{
+    var a=new(window.AudioContext||window.webkitAudioContext)();
+    [784,1046].forEach(function(f,i){var o=a.createOscillator();var g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;var t=a.currentTime+i*0.15;g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);o.start(t);o.stop(t+0.3);});
+  }catch(e){}
+}
+
+function fetchOrders(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',DB_URL+'/orders.json',true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      var data=xhr.responseText==='null'?null:JSON.parse(xhr.responseText);
+      var hasReady=false;
+      if(data){
+        Object.keys(data).forEach(function(key){
+          var prev=orders[key]?orders[key].status:null;
+          if(!orders[key]){orders[key]=data[key];orders[key]._key=key;}
+          else{orders[key].status=data[key].status;}
+          // 提供済みになったら音を鳴らす
+          if(prev!=='提供済み'&&data[key].status==='提供済み')hasReady=true;
+        });
+        if(hasReady){beep();lastCheck=Date.now();}
+      }
+      document.getElementById('statusTxt').textContent='● 受信中';
+      render();
+    }
+  };
+  xhr.send();
+}
+
+// テーブルごとに注文を集約
+function getTableOrders(){
+  var tables={};
+  Object.keys(orders).forEach(function(key){
+    var o=orders[key];
+    if(o.status==='会計済み')return;
+    var t=o.table;
+    if(!tables[t])tables[t]={table:t,orders:[],total:0,discount:0,status:'新規',keys:[]};
+    tables[t].orders.push(o);
+    tables[t].keys.push(key);
+    tables[t].total+=o.total;
+    tables[t].discount+=o.discount||0;
+    // 最新のステータスを反映
+    if(o.status==='提供済み')tables[t].status='提供済み';
+    else if(o.status==='調理中'&&tables[t].status!=='提供済み')tables[t].status='調理中';
+  });
+  return tables;
+}
+
+function render(){
+  var area=document.getElementById('orderArea');
+  var tables=getTableOrders();
+  var keys=Object.keys(tables);
+  if(keys.length===0){area.innerHTML='<div class="empty">注文を待っています...</div>';return;}
+  keys.sort();
+  var html='<div class="orders">';
+  keys.forEach(function(t){
+    var td=tables[t];
+    var st=td.status;
+    var cls=st==='提供済み'?'status-ready':st==='調理中'?'status-cooking':'status-new';
+    var badge=st==='提供済み'?'<span class="badge badge-ready">🍽️ 提供済み</span>':st==='調理中'?'<span class="badge badge-cooking">🔥 調理中</span>':'<span class="badge badge-new">📋 受付済み</span>';
+    html+='<div class="card '+cls+'">';
+    html+='<div class="card-head"><span class="tbl">'+t+'</span>'+badge+'</div>';
+    html+='<div class="items">';
+    // 全注文の品目をまとめて表示
+    td.orders.forEach(function(o,idx){
+      if(td.orders.length>1)html+='<div class="order-num">'+(idx+1)+'回目の注文</div>';
+      o.items.forEach(function(item){
+        html+='<div class="item-row"><span class="item-name">'+item.name+'</span><span class="item-qty">×'+item.qty+'</span><span class="item-price">¥'+item.sub.toLocaleString()+'</span></div>';
+      });
+    });
+    if(td.discount>0)html+='<div class="disc-row"><span>🎉 定食+コーヒー割引</span><span>-¥'+td.discount+'</span></div>';
+    html+='<div class="total-row"><span>合　計</span><span>¥'+td.total.toLocaleString()+'</span></div>';
+    html+='</div>';
+    if(st==='提供済み'){
+      html+='<button class="pay-btn" onclick="openPay(\''+t+'\')">💴 お会計</button>';
+    } else {
+      html+='<div class="wait-label">'+(st==='調理中'?'🔥 調理中です...':'📋 キッチンに送信済み')+'</div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  area.innerHTML=html;
+}
+
+function openPay(table){
+  currentTable=table;
+  rcvBuf='';
+  var td=getTableOrders()[table];
+  document.getElementById('payTable').textContent=table+'のご注文';
+  // 品目一覧
+  var ihtml='';
+  td.orders.forEach(function(o,idx){
+    if(td.orders.length>1)ihtml+='<div style="font-size:11px;color:#999;padding:2px 0;">'+(idx+1)+'回目</div>';
+    o.items.forEach(function(item){ihtml+='<div class="md-item"><span>'+item.name+' ×'+item.qty+'</span><span>¥'+item.sub.toLocaleString()+'</span></div>';});
+  });
+  if(td.discount>0)ihtml+='<div class="md-disc"><span>割引</span><span>-¥'+td.discount+'</span></div>';
+  document.getElementById('payItems').innerHTML=ihtml;
+  document.getElementById('payTotal').textContent=td.total.toLocaleString();
+  document.getElementById('rcvDisp').textContent='―';
+  document.getElementById('changeDisp').textContent='';
+  document.getElementById('changeDisp').className='change-disp';
+  document.getElementById('confirmBtn').disabled=true;
+  document.getElementById('payMod').classList.add('on');
+}
+function closePay(){document.getElementById('payMod').classList.remove('on');currentTable=null;}
+
+function rk(k){if(rcvBuf.length>=7)return;rcvBuf+=k;updateRcv();}
+function rd(){rcvBuf=rcvBuf.slice(0,-1);updateRcv();}
+function updateRcv(){
+  var td=getTableOrders()[currentTable];
+  if(!td)return;
+  var el=document.getElementById('rcvDisp');
+  var cd=document.getElementById('changeDisp');
+  var cb=document.getElementById('confirmBtn');
+  if(!rcvBuf){el.textContent='―';cd.textContent='';cb.disabled=true;return;}
+  var rcv=parseInt(rcvBuf);
+  el.textContent='¥'+rcv.toLocaleString();
+  var ch=rcv-td.total;
+  if(ch>=0){cd.textContent='おつり　¥'+ch.toLocaleString();cd.className='change-disp';cb.disabled=false;}
+  else{cd.textContent='¥'+Math.abs(ch).toLocaleString()+' 不足';cd.className='change-disp over';cb.disabled=true;}
+}
+
+function confirmPay(){
+  var td=getTableOrders()[currentTable];
+  if(!td)return;
+  var rcv=parseInt(rcvBuf);
+  var ch=rcv-td.total;
+  // レシート
+  var html='';
+  td.orders.forEach(function(o,idx){
+    if(td.orders.length>1)html+='<div class="rl" style="color:#999;font-size:12px;"><span>'+(idx+1)+'回目</span></div>';
+    o.items.forEach(function(item){html+='<div class="rl"><span>'+item.name+' ×'+item.qty+'</span><span>¥'+item.sub.toLocaleString()+'</span></div>';});
+  });
+  if(td.discount>0)html+='<div class="rl" style="color:green"><span>割引</span><span>-¥'+td.discount+'</span></div>';
+  html+='<div class="rl" style="font-weight:700;margin-top:6px;border-top:1px solid #eee;padding-top:6px"><span>合計</span><span>¥'+td.total.toLocaleString()+'</span></div>';
+  html+='<div class="rl"><span>お預かり</span><span>¥'+rcv.toLocaleString()+'</span></div>';
+  document.getElementById('receiptBody').innerHTML=html;
+  document.getElementById('receiptChange').innerHTML='<span class="rcl">おつり</span><br>¥'+ch.toLocaleString();
+  // 全注文を会計済みに
+  td.keys.forEach(function(key){
+    orders[key].status='会計済み';
+    var xhr=new XMLHttpRequest();
+    xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.send(JSON.stringify({status:'会計済み'}));
+  });
+  closePay();
+  document.getElementById('receiptMod').classList.add('on');
+}
+function closeReceipt(){document.getElementById('receiptMod').classList.remove('on');render();}
+
+function clearPaid(){
+  Object.keys(orders).forEach(function(key){
+    if(orders[key].status==='会計済み'){
+      var xhr=new XMLHttpRequest();
+      xhr.open('DELETE',DB_URL+'/orders/'+key+'.json',true);
+      xhr.send();
+      delete orders[key];
+    }
+  });
+  render();
+}
+
+fetchOrders();
+setInterval(fetchOrders,5000);
+</script>
+</body>
+</html>
