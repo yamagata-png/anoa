@@ -140,10 +140,21 @@ function render(){
 function updateStatus(key,status){
   orders[key].status=status;
   var xhr=new XMLHttpRequest();
-  xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
   xhr.setRequestHeader('Content-Type','application/json');
-  xhr.send(JSON.stringify({status:status}));
-  render();
+  if(status==='提供済み'){
+    // ステータス更新してから3秒後に画面から消す
+    xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
+    xhr.send(JSON.stringify({status:status}));
+    render();
+    setTimeout(function(){
+      delete orders[key];
+      render();
+    },3000);
+  } else {
+    xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
+    xhr.send(JSON.stringify({status:status}));
+    render();
+  }
 }
 
 fetchOrders();
