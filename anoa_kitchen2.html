@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亜乃亜 受信・会計</title>
+<style>
+:root{--br:#7B3F2A;--br2:#5C2D1A;--bl:#C4936A;--cr:#FAE8D0;--bg:#1A1A2E;--gn:#2E6B3E;--gn2:#1D4A2A;--rd:#C0392B;--yw:#E67E22;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:sans-serif;background:var(--bg);color:white;min-height:100vh;}
+
+/* HEADER */
+.hd{background:var(--br2);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--bl);}
+.hd h1{font-size:20px;font-weight:900;color:var(--cr);letter-spacing:.08em;}
+.hd-right{display:flex;align-items:center;gap:10px;}
+.status{font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(108,204,138,0.15);color:#6CCC8A;border:1px solid #6CCC8A;}
+.sound-btn{padding:6px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-family:inherit;font-size:13px;cursor:pointer;}
+.sound-btn.on{background:rgba(108,204,138,0.15);border-color:#6CCC8A;color:#6CCC8A;}
+.clr-btn{padding:6px 14px;background:rgba(196,147,106,0.15);border:1px solid var(--bl);border-radius:8px;color:var(--bl);font-family:inherit;font-size:13px;cursor:pointer;}
+
+/* ORDER CARDS */
+.empty{text-align:center;padding:80px 20px;color:rgba(255,255,255,0.2);font-size:18px;line-height:3;}
+.orders{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.card{background:rgba(255,255,255,0.06);border-radius:16px;padding:16px;border:2px solid rgba(196,147,106,0.2);transition:all .2s;}
+.card.new-order{border-color:#6CCC8A;box-shadow:0 0 20px rgba(108,204,138,0.2);}
+.card.done{opacity:.45;border-color:rgba(255,255,255,0.08);}
+
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.tbl{font-size:24px;font-weight:900;color:var(--cr);}
+.time{font-size:12px;color:rgba(255,255,255,0.4);}
+.new-badge{background:#6CCC8A;color:#1A3A2A;font-size:11px;font-weight:900;padding:3px 10px;border-radius:20px;}
+.done-badge{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:11px;padding:3px 10px;border-radius:20px;}
+
+.items{margin-bottom:12px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dotted rgba(255,255,255,0.07);font-size:14px;}
+.item-name{color:rgba(255,255,255,0.85);flex:1;}
+.item-qty{color:var(--bl);margin:0 10px;font-weight:700;}
+.item-price{color:rgba(255,255,255,0.45);font-size:12px;}
+.disc-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#6CCC8A;font-weight:700;}
+.total-row{display:flex;justify-content:space-between;padding:10px 0 0;font-weight:900;font-size:18px;color:var(--cr);border-top:1px solid rgba(196,147,106,0.3);margin-top:4px;}
+
+/* ACTION BUTTONS */
+.card-btns{display:flex;gap:8px;margin-top:12px;}
+.pay-btn{flex:2;height:50px;background:var(--gn);color:white;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 var(--gn2);}
+.pay-btn:active{transform:translateY(3px);box-shadow:none;}
+.pay-btn:disabled{background:#444;box-shadow:none;cursor:default;color:#888;}
+.del-btn{flex:1;height:50px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-family:inherit;font-size:13px;cursor:pointer;}
+.del-btn:active{background:rgba(255,255,255,0.1);}
+
+/* PAYMENT MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.md{background:var(--cr);border-radius:20px;padding:24px 28px;width:380px;max-width:92vw;max-height:92vh;overflow-y:auto;}
+.md h2{font-size:20px;font-weight:900;color:var(--br);margin-bottom:6px;text-align:center;}
+.md-tbl{font-size:14px;color:var(--bl);text-align:center;margin-bottom:16px;}
+.md-total{font-size:38px;font-weight:900;color:var(--br2);text-align:center;margin-bottom:18px;}
+.md-total small{font-size:16px;font-weight:400;}
+.md-label{font-size:14px;font-weight:700;color:var(--br);margin-bottom:8px;}
+.rcv-disp{font-size:34px;font-weight:900;color:#2A4A5E;text-align:center;background:white;border:3px solid #2A4A5E;border-radius:12px;padding:10px;margin-bottom:14px;min-height:62px;display:flex;align-items:center;justify-content:center;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.nk{height:56px;background:white;border:2px solid rgba(123,63,42,0.2);border-radius:12px;font-size:24px;font-weight:700;color:var(--br);cursor:pointer;font-family:inherit;box-shadow:0 3px 0 rgba(123,63,42,0.15);}
+.nk:active{transform:translateY(2px);box-shadow:none;}
+.nk.dl{background:#FDE;color:var(--rd);font-size:18px;}
+.nk.z2{grid-column:span 2;}
+.change-disp{text-align:center;font-size:20px;font-weight:700;margin-bottom:16px;min-height:28px;color:var(--gn);}
+.change-disp.over{color:var(--rd);}
+.md-btns{display:flex;gap:10px;}
+.md-btn{flex:1;height:54px;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,0.15);}
+.md-btn:active{transform:translateY(3px);box-shadow:none;}
+.md-cancel{background:#C8B89A;color:#5C3A1A;}
+.md-confirm{background:var(--gn);color:white;font-size:18px;}
+.md-confirm:disabled{background:#AAA;cursor:default;}
+
+/* RECEIPT MODAL */
+.rm{background:white;border-radius:20px;padding:24px 28px;width:360px;max-width:92vw;text-align:center;}
+.ri{font-size:52px;margin-bottom:8px;}
+.rt{font-size:24px;font-weight:900;color:var(--gn);margin-bottom:14px;}
+.rb{text-align:left;border-top:1px dashed #CCC;border-bottom:1px dashed #CCC;padding:10px 0;margin-bottom:12px;max-height:200px;overflow-y:auto;}
+.rl{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:#333;}
+.rch{font-size:30px;font-weight:900;color:#2A4A5E;margin:10px 0;}
+.rcl{font-size:13px;font-weight:400;color:#666;}
+.rc{width:100%;height:52px;background:var(--br);color:var(--cr);border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:900;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <h1>亜 乃 亜　注文受信・会計</h1>
+  <div class="hd-right">
+    <span class="status" id="statusTxt">● 受信中</span>
+    <button class="sound-btn on" id="soundBtn" onclick="togSound()">🔔 音ON</button>
+    <button class="clr-btn" onclick="clearDone()">完了を削除</button>
+  </div>
+</div>
+
+<div id="orderArea"><div class="empty">注文を待っています...<br>お客様がQRで注文すると<br>ここに表示されます</div></div>
+
+<!-- 会計モーダル -->
+<div class="ov" id="payMod">
+  <div class="md">
+    <h2>お 会 計</h2>
+    <div class="md-tbl" id="payTable"></div>
+    <div class="md-total"><small>合計　</small><span id="payTotal">0</span><small> 円</small></div>
+    <div class="md-label">お預かり金額を入力</div>
+    <div class="rcv-disp" id="rcvDisp">―</div>
+    <div class="numpad">
+      <button class="nk" onclick="rk('1')">1</button><button class="nk" onclick="rk('2')">2</button><button class="nk" onclick="rk('3')">3</button>
+      <button class="nk" onclick="rk('4')">4</button><button class="nk" onclick="rk('5')">5</button><button class="nk" onclick="rk('6')">6</button>
+      <button class="nk" onclick="rk('7')">7</button><button class="nk" onclick="rk('8')">8</button><button class="nk" onclick="rk('9')">9</button>
+      <button class="nk dl" onclick="rd()">⌫</button><button class="nk z2" onclick="rk('0')">0</button>
+    </div>
+    <div class="change-disp" id="changeDisp"></div>
+    <div class="md-btns">
+      <button class="md-btn md-cancel" onclick="closePay()">戻る</button>
+      <button class="md-btn md-confirm" id="confirmBtn" onclick="confirmPay()" disabled>確　定</button>
+    </div>
+  </div>
+</div>
+
+<!-- レシートモーダル -->
+<div class="ov" id="receiptMod">
+  <div class="rm">
+    <div class="ri">✅</div>
+    <div class="rt">お会計完了</div>
+    <div class="rb" id="receiptBody"></div>
+    <div class="rch" id="receiptChange"></div>
+    <button class="rc" onclick="closeReceipt()">次のお客様へ</button>
+  </div>
+</div>
+
+<script>
+var DB_URL='https://anoa-register-default-rtdb.asia-southeast1.firebasedatabase.app';
+var orders={};
+var soundOn=true;
+var lastCheck=Date.now();
+var currentKey=null;
+var rcvBuf='';
+
+function togSound(){soundOn=!soundOn;var b=document.getElementById('soundBtn');b.textContent=soundOn?'🔔 音ON':'🔕 音OFF';b.classList.toggle('on',soundOn);}
+
+function beep(){if(!soundOn)return;try{var a=new(window.AudioContext||window.webkitAudioContext)();var freqs=[523,659,784];freqs.forEach(function(f,i){var o=a.createOscillator();var g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;var t=a.currentTime+i*0.12;g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);o.start(t);o.stop(t+0.25);});}catch(e){}}
+
+function fetchOrders(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',DB_URL+'/orders.json',true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200&&xhr.responseText!=='null'){
+        var data=JSON.parse(xhr.responseText);
+        var hasNew=false;
+        if(data){
+          Object.keys(data).forEach(function(key){
+            if(!orders[key]){
+              orders[key]=data[key];
+              orders[key]._key=key;
+              if((data[key].timestamp||0)>lastCheck)hasNew=true;
+            }
+          });
+          if(hasNew){beep();lastCheck=Date.now();}
+        }
+        document.getElementById('statusTxt').textContent='● 受信中';
+      } else if(xhr.status===200){
+        document.getElementById('statusTxt').textContent='● 受信中';
+      }
+      render();
+    }
+  };
+  xhr.send();
+}
+
+function render(){
+  var area=document.getElementById('orderArea');
+  var keys=Object.keys(orders);
+  if(keys.length===0){area.innerHTML='<div class="empty">注文を待っています...<br>お客様がQRで注文すると<br>ここに表示されます</div>';return;}
+  keys.sort(function(a,b){return(orders[b].timestamp||0)-(orders[a].timestamp||0);});
+  var html='<div class="orders">';
+  keys.forEach(function(key){
+    var o=orders[key];
+    var isDone=o.status==='完了';
+    var isNew=o.status==='新規';
+    html+='<div class="card'+(isNew?' new-order':isDone?' done':'')+'">';
+    html+='<div class="card-head">';
+    html+='<span class="tbl">'+o.table+'</span>';
+    html+='<div style="display:flex;align-items:center;gap:8px;">';
+    if(isNew)html+='<span class="new-badge">新着</span>';
+    if(isDone)html+='<span class="done-badge">完了</span>';
+    html+='<span class="time">'+o.time+'</span>';
+    html+='</div></div>';
+    html+='<div class="items">';
+    o.items.forEach(function(item){
+      html+='<div class="item-row"><span class="item-name">'+item.name+'</span><span class="item-qty">×'+item.qty+'</span><span class="item-price">¥'+item.sub.toLocaleString()+'</span></div>';
+    });
+    if(o.discount>0)html+='<div class="disc-row"><span>🎉 定食+コーヒー割引</span><span>-¥'+o.discount+'</span></div>';
+    html+='<div class="total-row"><span>合　計</span><span>¥'+o.total.toLocaleString()+'</span></div>';
+    html+='</div>';
+    html+='<div class="card-btns">';
+    if(!isDone){
+      html+='<button class="pay-btn" onclick="openPay(\''+key+'\')">💴 お会計</button>';
+    } else {
+      html+='<button class="pay-btn" disabled>✅ 会計済み</button>';
+    }
+    html+='<button class="del-btn" onclick="deleteOrder(\''+key+'\')">削除</button>';
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  area.innerHTML=html;
+}
+
+// 会計
+function openPay(key){
+  currentKey=key;
+  rcvBuf='';
+  var o=orders[key];
+  document.getElementById('payTable').textContent=o.table+'のご注文';
+  document.getElementById('payTotal').textContent=o.total.toLocaleString();
+  document.getElementById('rcvDisp').textContent='―';
+  document.getElementById('changeDisp').textContent='';
+  document.getElementById('changeDisp').className='change-disp';
+  document.getElementById('confirmBtn').disabled=true;
+  document.getElementById('payMod').classList.add('on');
+}
+function closePay(){document.getElementById('payMod').classList.remove('on');currentKey=null;}
+
+function rk(k){if(rcvBuf.length>=7)return;rcvBuf+=k;updateRcv();}
+function rd(){rcvBuf=rcvBuf.slice(0,-1);updateRcv();}
+function updateRcv(){
+  var o=orders[currentKey];
+  if(!o)return;
+  var el=document.getElementById('rcvDisp');
+  var cd=document.getElementById('changeDisp');
+  var cb=document.getElementById('confirmBtn');
+  if(!rcvBuf){el.textContent='―';cd.textContent='';cb.disabled=true;return;}
+  var rcv=parseInt(rcvBuf);
+  el.textContent='¥'+rcv.toLocaleString();
+  var ch=rcv-o.total;
+  if(ch>=0){cd.textContent='おつり　¥'+ch.toLocaleString();cd.className='change-disp';cb.disabled=false;}
+  else{cd.textContent='¥'+Math.abs(ch).toLocaleString()+' 不足';cd.className='change-disp over';cb.disabled=true;}
+}
+
+function confirmPay(){
+  var o=orders[currentKey];
+  if(!o)return;
+  var rcv=parseInt(rcvBuf);
+  var ch=rcv-o.total;
+  // build receipt
+  var html='';
+  o.items.forEach(function(item){html+='<div class="rl"><span>'+item.name+' ×'+item.qty+'</span><span>¥'+item.sub.toLocaleString()+'</span></div>';});
+  if(o.discount>0)html+='<div class="rl" style="color:green"><span>割引</span><span>-¥'+o.discount+'</span></div>';
+  html+='<div class="rl" style="font-weight:700;margin-top:6px;border-top:1px solid #eee;padding-top:6px"><span>合計</span><span>¥'+o.total.toLocaleString()+'</span></div>';
+  html+='<div class="rl"><span>お預かり</span><span>¥'+rcv.toLocaleString()+'</span></div>';
+  document.getElementById('receiptBody').innerHTML=html;
+  document.getElementById('receiptChange').innerHTML='<span class="rcl">おつり</span><br>¥'+ch.toLocaleString();
+  // mark done in Firebase
+  var xhr=new XMLHttpRequest();
+  xhr.open('PATCH',DB_URL+'/orders/'+currentKey+'.json',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.send(JSON.stringify({status:'完了'}));
+  orders[currentKey].status='完了';
+  closePay();
+  document.getElementById('receiptMod').classList.add('on');
+}
+
+function closeReceipt(){
+  document.getElementById('receiptMod').classList.remove('on');
+  render();
+}
+
+function deleteOrder(key){
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE',DB_URL+'/orders/'+key+'.json',true);
+  xhr.send();
+  delete orders[key];
+  render();
+}
+
+function clearDone(){
+  Object.keys(orders).forEach(function(key){
+    if(orders[key].status==='完了'){
+      var xhr=new XMLHttpRequest();
+      xhr.open('DELETE',DB_URL+'/orders/'+key+'.json',true);
+      xhr.send();
+      delete orders[key];
+    }
+  });
+  render();
+}
+
+fetchOrders();
+setInterval(fetchOrders,5000);
+</script>
+</body>
+</html>
