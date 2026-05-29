@@ -16,14 +16,11 @@ body{font-family:sans-serif;background:var(--bg);color:white;min-height:100vh;}
 .sound-btn.on{background:rgba(108,204,138,0.15);border-color:#6CCC8A;color:#6CCC8A;}
 .empty{text-align:center;padding:80px 20px;color:rgba(255,255,255,0.2);font-size:18px;line-height:3;}
 .orders{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-
-/* カード */
 .card{border-radius:16px;padding:16px;border:2px solid;transition:all .3s;}
 .card.status-new{background:rgba(255,200,50,0.1);border-color:#FFC832;box-shadow:0 0 20px rgba(255,200,50,0.2);animation:pulse 1.5s ease-in-out 5;}
 .card.status-cooking{background:rgba(230,126,22,0.1);border-color:var(--yw);}
 .card.status-done{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);opacity:.5;}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,200,50,0.4);}50%{box-shadow:0 0 0 10px rgba(255,200,50,0);}}
-
 .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .tbl{font-size:22px;font-weight:900;}
 .card.status-new .tbl{color:#FFC832;}
@@ -34,13 +31,10 @@ body{font-family:sans-serif;background:var(--bg);color:white;min-height:100vh;}
 .badge-new{background:#FFC832;color:#3A2A00;}
 .badge-cooking{background:var(--yw);color:white;}
 .badge-done{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);}
-
 .items{margin-bottom:12px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;}
 .item-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dotted rgba(255,255,255,0.07);font-size:15px;}
 .item-name{color:rgba(255,255,255,0.85);flex:1;}
 .item-qty{color:var(--bl);margin:0 10px;font-weight:900;font-size:16px;}
-
-/* ボタン */
 .card-btn{width:100%;height:52px;border:none;border-radius:12px;font-family:inherit;font-size:17px;font-weight:900;cursor:pointer;margin-top:4px;}
 .card-btn:active{opacity:.8;}
 .btn-confirm{background:#FFC832;color:#3A2A00;box-shadow:0 4px 0 #A07800;}
@@ -57,7 +51,6 @@ body{font-family:sans-serif;background:var(--bg);color:white;min-height:100vh;}
   </div>
 </div>
 <div id="orderArea"><div class="empty">注文を待っています...</div></div>
-
 <script>
 var DB_URL='https://anoa-register-default-rtdb.asia-southeast1.firebasedatabase.app';
 var orders={};
@@ -66,14 +59,19 @@ var lastCheck=Date.now();
 
 function togSound(){soundOn=!soundOn;var b=document.getElementById('soundBtn');b.textContent=soundOn?'🔔 音ON':'🔕 音OFF';b.classList.toggle('on',soundOn);}
 
-function beep(type){
+function beep(){
   if(!soundOn)return;
   try{
     var a=new(window.AudioContext||window.webkitAudioContext)();
-    if(type==='new'){
-      // 新着：明るい3音
-      [523,659,784].forEach(function(f,i){var o=a.createOscillator();var g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;var t=a.currentTime+i*0.12;g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);o.start(t);o.stop(t+0.25);});
-    }
+    [523,659,784].forEach(function(f,i){
+      var o=a.createOscillator();var g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.frequency.value=f;
+      var t=a.currentTime+i*0.12;
+      g.gain.setValueAtTime(0.3,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+      o.start(t);o.stop(t+0.25);
+    });
   }catch(e){}
 }
 
@@ -91,11 +89,10 @@ function fetchOrders(){
             orders[key]._key=key;
             if((data[key].timestamp||0)>lastCheck)hasNew=true;
           } else {
-            // ステータス更新を反映
             orders[key].status=data[key].status;
           }
         });
-        if(hasNew){beep('new');lastCheck=Date.now();}
+        if(hasNew){beep();lastCheck=Date.now();}
       }
       document.getElementById('statusTxt').textContent='● 受信中';
       render();
@@ -107,7 +104,6 @@ function fetchOrders(){
 function render(){
   var area=document.getElementById('orderArea');
   var keys=Object.keys(orders);
-  // 完了済みは除外して表示
   var visible=keys.filter(function(k){return orders[k].status!=='会計済み';});
   if(visible.length===0){area.innerHTML='<div class="empty">注文を待っています...</div>';return;}
   visible.sort(function(a,b){return(orders[a].timestamp||0)-(orders[b].timestamp||0);});
@@ -125,9 +121,9 @@ function render(){
     });
     html+='</div>';
     if(st==='新規'){
-      html+='<button class="card-btn btn-confirm" onclick="updateStatus(\''+key+'\',\'調理中\')">👍 確認・調理開始</button>';
+      html+='<button class="card-btn btn-confirm" onclick="doUpdate(\''+key+'\',\'調理中\')">👍 確認・調理開始</button>';
     } else if(st==='調理中'){
-      html+='<button class="card-btn btn-done" onclick="updateStatus(\''+key+'\',\'提供済み\')">🍽️ 調理完了・提供へ</button>';
+      html+='<button class="card-btn btn-done" onclick="doUpdate(\''+key+'\',\'提供済み\')">🍽️ 調理完了・提供へ</button>';
     } else {
       html+='<button class="card-btn btn-finished">✅ 提供済み</button>';
     }
@@ -137,23 +133,18 @@ function render(){
   area.innerHTML=html;
 }
 
-function updateStatus(key,status){
+function doUpdate(key,status){
   orders[key].status=status;
   var xhr=new XMLHttpRequest();
+  xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
   xhr.setRequestHeader('Content-Type','application/json');
+  xhr.send(JSON.stringify({status:status}));
+  render();
   if(status==='提供済み'){
-    // ステータス更新してから3秒後に画面から消す
-    xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
-    xhr.send(JSON.stringify({status:status}));
-    render();
     setTimeout(function(){
       delete orders[key];
       render();
     },3000);
-  } else {
-    xhr.open('PATCH',DB_URL+'/orders/'+key+'.json',true);
-    xhr.send(JSON.stringify({status:status}));
-    render();
   }
 }
 
