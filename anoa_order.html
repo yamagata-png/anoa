@@ -76,6 +76,19 @@ body{font-family:sans-serif;background:var(--bg);color:var(--tx);min-height:100v
 .sending.on{display:flex;}
 .sending-box{background:white;border-radius:16px;padding:30px;text-align:center;}
 .sending-box p{font-size:16px;font-weight:700;color:var(--tx);margin-top:12px;}
+
+/* 番号入力バー */
+.num-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EDE4D8;border-bottom:1px solid rgba(123,63,42,0.2);flex-shrink:0;position:sticky;top:0;z-index:40;}
+.num-label{font-size:14px;font-weight:700;color:var(--br);white-space:nowrap;}
+.num-disp{width:70px;height:40px;background:white;border:2px solid var(--bl);border-radius:8px;font-size:22px;font-weight:900;color:var(--br);text-align:center;line-height:40px;flex-shrink:0;}
+.num-disp.ph{color:#CCC;font-size:13px;font-weight:400;}
+.nkw{display:flex;gap:6px;align-items:stretch;}
+.nkr{display:flex;flex-direction:column;gap:4px;}
+.nkrow{display:flex;gap:4px;}
+.nk{width:44px;height:40px;background:white;border:2px solid var(--bl);border-radius:8px;font-size:20px;font-weight:700;color:var(--br);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 rgba(123,63,42,0.25);}
+.nk:active{transform:translateY(2px);box-shadow:none;}
+.nk.dl{background:#FDE;border-color:var(--rd);color:var(--rd);font-size:15px;}
+.nk.ok{background:var(--br);color:var(--cr);font-size:14px;font-weight:900;width:80px;align-self:stretch;border-radius:10px;box-shadow:0 4px 0 var(--br2);}
 </style>
 </head>
 <body>
@@ -91,6 +104,30 @@ body{font-family:sans-serif;background:var(--bg);color:var(--tx);min-height:100v
 </div>
 
 <div class="cats" id="cats"></div>
+<div class="num-bar">
+  <span class="num-label">番号</span>
+  <div class="num-disp ph" id="numDisp">No.</div>
+  <div class="nkw">
+    <div class="nkr">
+      <div class="nkrow">
+        <button class="nk" onclick="nk('1')">1</button>
+        <button class="nk" onclick="nk('2')">2</button>
+        <button class="nk" onclick="nk('3')">3</button>
+        <button class="nk" onclick="nk('4')">4</button>
+        <button class="nk" onclick="nk('5')">5</button>
+      </div>
+      <div class="nkrow">
+        <button class="nk" onclick="nk('6')">6</button>
+        <button class="nk" onclick="nk('7')">7</button>
+        <button class="nk" onclick="nk('8')">8</button>
+        <button class="nk" onclick="nk('9')">9</button>
+        <button class="nk" onclick="nk('0')">0</button>
+        <button class="nk dl" onclick="nd()">⌫</button>
+      </div>
+    </div>
+    <button class="nk ok" onclick="nc()">追加</button>
+  </div>
+</div>
 <div class="mg" id="mg"></div>
 
 <div class="cart">
@@ -191,7 +228,54 @@ function sendOrder(){
   xhr.send(JSON.stringify(order));
 }
 
-window.onload=function(){initCats();rg(cur);};
+var numBuf='';
+function nk(k){if(numBuf.length>=3)return;numBuf+=k;und();}
+function nd(){numBuf=numBuf.slice(0,-1);und();}
+function und(){var e=document.getElementById('numDisp');if(!numBuf){e.textContent='No.';e.classList.add('ph');}else{e.textContent=numBuf;e.classList.remove('ph');}}
+function nc(){
+  if(!numBuf)return;
+  var id=parseInt(numBuf);
+  var item=fi(id);
+  if(item){
+    // カテゴリタブを切り替え
+    cur=item.c;
+    document.querySelectorAll('.ct').forEach(function(b,i){b.classList.toggle('on',CATS[i].id===item.c);});
+    rg(item.c);
+    inc(id);
+    // 該当ボタンまでスクロール
+    setTimeout(function(){
+      var btns=document.querySelectorAll('.mb');
+      btns.forEach(function(btn){
+        if(btn.querySelector('.mn')&&btn.querySelector('.mn').textContent==id){
+          btn.scrollIntoView({behavior:'smooth',block:'center'});
+        }
+      });
+    },100);
+  } else {
+    alert(id+'番のメニューは見つかりません');
+  }
+  numBuf='';und();
+}
+window.onload=function(){
+  // Firebaseからメニューとカテゴリを読み込む
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',DB_URL+'/menu.json',true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200&&xhr.responseText!=='null'){
+        var data=JSON.parse(xhr.responseText);
+        if(data.items){
+          ITEMS=data.items;
+          if(data.cats)CATS=data.cats;
+        } else {
+          ITEMS=data;
+        }
+      }
+      initCats();rg(cur);
+    }
+  };
+  xhr.send();
+};
 </script>
 </body>
 </html>

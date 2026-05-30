@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亜乃亜 メニュー管理</title>
+<style>
+:root{--br:#7B3F2A;--br2:#5C2D1A;--bl:#C4936A;--cr:#FAE8D0;--bg:#FBF4EC;--tx:#2A1A0E;--gn:#2E6B3E;--rd:#C0392B;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:sans-serif;background:var(--bg);color:var(--tx);}
+.hd{background:var(--br2);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--bl);}
+.hd h1{font-size:20px;font-weight:900;color:var(--cr);letter-spacing:.08em;}
+.save-all{padding:10px 24px;background:var(--gn);color:white;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #1D4A2A;}
+.save-all:active{transform:translateY(3px);box-shadow:none;}
+.save-all:disabled{background:#AAA;cursor:default;}
+.msg{text-align:center;padding:10px;font-size:14px;font-weight:700;display:none;}
+.msg.ok{color:var(--gn);display:block;}
+.msg.err{color:var(--rd);display:block;}
+.container{max-width:900px;margin:0 auto;padding:20px;}
+.section{margin-bottom:28px;}
+.section-title{font-size:18px;font-weight:900;color:var(--br);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--bl);display:flex;justify-content:space-between;align-items:center;}
+.add-btn{padding:6px 16px;background:var(--br);color:var(--cr);border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+.item-row{display:flex;align-items:center;gap:8px;padding:8px;background:white;border:1px solid rgba(123,63,42,0.15);border-radius:10px;margin-bottom:6px;}
+.item-no{width:40px;height:38px;border:1.5px solid rgba(123,63,42,0.3);border-radius:8px;font-size:14px;font-weight:700;color:var(--br);text-align:center;padding:0 4px;}
+.item-name{flex:2;height:38px;border:1.5px solid rgba(123,63,42,0.3);border-radius:8px;font-size:14px;padding:0 10px;font-family:inherit;}
+.item-note{flex:1;height:38px;border:1.5px solid rgba(123,63,42,0.3);border-radius:8px;font-size:13px;padding:0 10px;font-family:inherit;color:#888;}
+.item-price{width:80px;height:38px;border:1.5px solid rgba(123,63,42,0.3);border-radius:8px;font-size:14px;font-weight:700;color:var(--br);text-align:right;padding:0 10px;}
+.del-btn{width:36px;height:36px;background:#FDE;border:1px solid var(--rd);border-radius:8px;color:var(--rd);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.loading{text-align:center;padding:40px;color:rgba(0,0,0,0.3);font-size:16px;}
+.cat-section{background:white;border:2px solid var(--bl);border-radius:12px;padding:16px;margin-bottom:24px;}
+.cat-section h2{font-size:16px;font-weight:900;color:var(--br);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(123,63,42,0.2);}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.cat-row{display:flex;align-items:center;gap:8px;}
+.cat-id{font-size:12px;color:#888;width:80px;flex-shrink:0;}
+.cat-name{flex:1;height:36px;border:1.5px solid rgba(123,63,42,0.3);border-radius:8px;font-size:14px;padding:0 10px;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="hd">
+  <h1>🛠️ メニュー管理</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="msg" class="msg"></span>
+    <button class="save-all" onclick="saveAll()" id="saveBtn">💾 全て保存</button>
+  </div>
+</div>
+<div class="container">
+  <div class="cat-section">
+    <h2>📂 カテゴリ名の編集</h2>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+  <div id="content"><div class="loading">読み込み中...</div></div>
+</div>
+
+<script>
+var DB_URL='https://anoa-register-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+var CATS=[
+  {id:'pilafu',    lb:'ピラフ'},
+  {id:'spaghetti', lb:'スパゲッティ'},
+  {id:'teishoku',  lb:'定食・丼'},
+  {id:'curry',     lb:'焼きそば・カレー'},
+  {id:'toast',     lb:'トースト・サンド'},
+  {id:'dessert',   lb:'デザート'},
+  {id:'coffee',    lb:'コーヒー・紅茶'},
+  {id:'juice',     lb:'ジュース'},
+];
+
+var DEFAULT_ITEMS=[
+  {id:1,c:'pilafu',n:'ピラフ',p:450,nt:''},{id:2,c:'pilafu',n:'高菜ピラフ',p:550,nt:''},{id:3,c:'pilafu',n:'オムライス',p:550,nt:''},{id:4,c:'pilafu',n:'ドライカレー',p:550,nt:''},{id:5,c:'pilafu',n:'サーモンピラフ',p:600,nt:''},{id:6,c:'pilafu',n:'シーフードピラフ',p:600,nt:''},{id:7,c:'pilafu',n:'ミンチカツピラフ',p:600,nt:''},{id:8,c:'pilafu',n:'唐揚げピラフ',p:650,nt:''},{id:9,c:'pilafu',n:'ハンバーグピラフ',p:700,nt:''},{id:10,c:'pilafu',n:'カツピラフ',p:750,nt:''},{id:11,c:'pilafu',n:'エビピラフ',p:750,nt:''},
+  {id:12,c:'spaghetti',n:'イタリアン',p:500,nt:''},{id:13,c:'spaghetti',n:'ミート',p:550,nt:''},{id:14,c:'spaghetti',n:'アサリ',p:600,nt:'コンソメ／クリーム'},{id:15,c:'spaghetti',n:'ミンチカツイタリアン',p:650,nt:''},{id:16,c:'spaghetti',n:'ミンチカツミート',p:700,nt:''},{id:17,c:'spaghetti',n:'唐揚げイタリアン',p:700,nt:''},{id:18,c:'spaghetti',n:'唐揚げミート',p:750,nt:''},{id:19,c:'spaghetti',n:'ハンバーグイタリアン',p:750,nt:''},{id:20,c:'spaghetti',n:'ハンバーグミート',p:800,nt:''},{id:21,c:'spaghetti',n:'カツイタリアン',p:800,nt:''},{id:22,c:'spaghetti',n:'カツミート',p:850,nt:''},
+  {id:23,c:'teishoku',n:'カツ丼',p:700,nt:''},{id:24,c:'teishoku',n:'サーモンフライ定食',p:550,nt:''},{id:25,c:'teishoku',n:'ミンチカツ定食',p:550,nt:''},{id:26,c:'teishoku',n:'唐揚げ定食',p:600,nt:''},{id:27,c:'teishoku',n:'焼きそば定食',p:650,nt:''},{id:28,c:'teishoku',n:'ハンバーグ定食',p:700,nt:''},{id:29,c:'teishoku',n:'焼きそば玉子のせ定食',p:750,nt:''},{id:30,c:'teishoku',n:'焼肉定食',p:850,nt:''},{id:31,c:'teishoku',n:'とんかつ定食',p:750,nt:''},{id:32,c:'teishoku',n:'カキフライ定食',p:800,nt:'冬季限定'},{id:33,c:'teishoku',n:'豚定食',p:700,nt:'生姜・おろし'},{id:34,c:'teishoku',n:'エビ定食',p:750,nt:''},
+  {id:35,c:'curry',n:'焼きそば',p:450,nt:'単品'},{id:36,c:'curry',n:'焼きそば玉子のせ',p:550,nt:'単品'},{id:37,c:'curry',n:'カレー',p:450,nt:''},{id:38,c:'curry',n:'サーモンフライカレー',p:600,nt:''},{id:39,c:'curry',n:'ミンチカツカレー',p:600,nt:''},{id:40,c:'curry',n:'カツカレー',p:700,nt:''},{id:41,c:'curry',n:'エビカレー',p:700,nt:''},
+  {id:42,c:'toast',n:'トースト',p:200,nt:''},{id:43,c:'toast',n:'シナモントースト',p:300,nt:''},{id:44,c:'toast',n:'玉子トースト',p:350,nt:''},{id:45,c:'toast',n:'ハムトースト',p:350,nt:''},{id:46,c:'toast',n:'ツナトースト',p:400,nt:''},{id:47,c:'toast',n:'ミックストースト',p:450,nt:''},{id:48,c:'toast',n:'玉子サンド',p:450,nt:''},{id:49,c:'toast',n:'ハムサンド',p:450,nt:''},{id:50,c:'toast',n:'ツナサンド',p:450,nt:''},{id:51,c:'toast',n:'ミックスサンド',p:450,nt:''},{id:52,c:'toast',n:'カツサンド',p:600,nt:''},
+  {id:53,c:'dessert',n:'ホットケーキ',p:350,nt:''},{id:54,c:'dessert',n:'ヨーグルト',p:300,nt:''},{id:55,c:'dessert',n:'フルーツヨーグルト',p:350,nt:''},{id:56,c:'dessert',n:'アイスクリーム',p:350,nt:''},
+  {id:57,c:'coffee',n:'ブレンドコーヒー',p:400,nt:''},{id:58,c:'coffee',n:'アメリカンコーヒー',p:400,nt:''},{id:59,c:'coffee',n:'アイスコーヒー',p:400,nt:''},{id:60,c:'coffee',n:'カフェオーレ',p:450,nt:'H／I'},{id:61,c:'coffee',n:'ウィンナーコーヒー',p:450,nt:''},{id:62,c:'coffee',n:'コーヒーフロート',p:500,nt:''},{id:63,c:'coffee',n:'セイロンティー',p:300,nt:''},{id:64,c:'coffee',n:'アイスレモンティー',p:300,nt:''},{id:65,c:'coffee',n:'アイスミルクティー',p:300,nt:''},{id:66,c:'coffee',n:'ロイヤルミルクティー',p:350,nt:''},{id:67,c:'coffee',n:'ホットレモン',p:400,nt:'生'},{id:68,c:'coffee',n:'ココア',p:400,nt:'H／I'},
+  {id:69,c:'juice',n:'コーラ',p:300,nt:''},{id:70,c:'juice',n:'ソーダ',p:300,nt:''},{id:71,c:'juice',n:'100%オレンジ',p:300,nt:''},{id:72,c:'juice',n:'100%アップル',p:300,nt:''},{id:73,c:'juice',n:'ミルク',p:300,nt:'H／I'},{id:74,c:'juice',n:'カルピス',p:300,nt:'H／I'},{id:75,c:'juice',n:'トマトジュース',p:350,nt:''},{id:76,c:'juice',n:'カルピスソーダ',p:350,nt:''},{id:77,c:'juice',n:'ヨーグルトドリンク',p:350,nt:''},{id:78,c:'juice',n:'コーラフロート',p:400,nt:''},{id:79,c:'juice',n:'クリームソーダ',p:400,nt:''},{id:80,c:'juice',n:'健康ジュース',p:400,nt:''},{id:81,c:'juice',n:'レモンスカッシュ',p:450,nt:'生'},{id:82,c:'juice',n:'ミックスジュース',p:450,nt:''},{id:83,c:'juice',n:'バナナジュース',p:450,nt:''},{id:84,c:'juice',n:'ジュース',p:480,nt:'生'}
+];
+
+var items=[];
+
+// Firebaseからメニューを読み込む、なければデフォルトを使う
+function loadMenu(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',DB_URL+'/menu.json',true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200&&xhr.responseText!=='null'){
+        var data=JSON.parse(xhr.responseText);
+        if(data.items){
+          items=data.items;
+          if(data.cats){CATS=data.cats;renderCats();}
+        } else {
+          items=data;
+        }
+      } else {
+        items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+      }
+      render();
+    }
+  };
+  xhr.send();
+}
+
+function render(){
+  var html='';
+  CATS.forEach(function(cat){
+    var catItems=items.filter(function(i){return i.c===cat.id;});
+    html+='<div class="section">';
+    html+='<div class="section-title"><span>'+cat.lb+'</span><button class="add-btn" onclick="addItem(\''+cat.id+'\')">＋ 追加</button></div>';
+    catItems.forEach(function(item){
+      var idx=items.indexOf(item);
+      html+='<div class="item-row">';
+      html+='<input class="item-no" type="number" value="'+item.id+'" onchange="items['+idx+'].id=parseInt(this.value)" title="番号">';
+      html+='<input class="item-name" type="text" value="'+item.n+'" onchange="items['+idx+'].n=this.value" placeholder="メニュー名">';
+      html+='<input class="item-note" type="text" value="'+(item.nt||'')+'" onchange="items['+idx+'].nt=this.value" placeholder="備考（任意）">';
+      html+='<input class="item-price" type="number" value="'+item.p+'" onchange="items['+idx+'].p=parseInt(this.value)" placeholder="価格">';
+      html+='<button class="del-btn" onclick="delItem('+idx+')">🗑</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('content').innerHTML=html;
+}
+
+function addItem(catId){
+  var maxId=0;
+  items.forEach(function(i){if(i.id>maxId)maxId=i.id;});
+  items.push({id:maxId+1,c:catId,n:'新しい品目',p:0,nt:''});
+  render();
+}
+
+function delItem(idx){
+  var item=items[idx];
+  if(!confirm('「'+item.n+'」を削除しますか？'))return;
+  items.splice(idx,1);
+  render();
+}
+
+function renderCats(){
+  var grid=document.getElementById('catGrid');
+  var html='';
+  CATS.forEach(function(cat,i){
+    html+='<div class="cat-row">';
+    html+='<span class="cat-id">'+cat.id+'</span>';
+    html+='<input class="cat-name" type="text" value="'+cat.lb+'" onchange="CATS['+i+'].lb=this.value" placeholder="カテゴリ名">';
+    html+='</div>';
+  });
+  grid.innerHTML=html;
+}
+
+function saveAll(){
+  var btn=document.getElementById('saveBtn');
+  var msg=document.getElementById('msg');
+  btn.disabled=true;
+  btn.textContent='保存中...';
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT',DB_URL+'/menu.json',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      btn.disabled=false;
+      btn.textContent='💾 全て保存';
+      if(xhr.status===200){
+        msg.textContent='✅ 保存しました！お客様の注文画面に反映されます';
+        msg.className='msg ok';
+        setTimeout(function(){msg.className='msg';},4000);
+      } else {
+        msg.textContent='❌ 保存エラー。Wi-Fiを確認してください';
+        msg.className='msg err';
+      }
+    }
+  };
+  xhr.send(JSON.stringify({items:items,cats:CATS}));
+}
+
+renderCats();
+loadMenu();
+</script>
+</body>
+</html>
